@@ -1,0 +1,10 @@
+[package]
+name = "vid2pdf-core"
+version = "0.1.0"
+edition = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+
+[dependencies]

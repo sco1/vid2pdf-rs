@@ -1,0 +1,17 @@
+{
+  "name": "Rust Development Codespace",
+  "image": "mcr.microsoft.com/devcontainers/rust:1",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "s3gf4ult.monokai-vibrant"
+      ]
+    }
+  }
+}

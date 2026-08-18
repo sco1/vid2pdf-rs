@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
+description = "Convert a video into a PDF series of stills."
+edition = "2024"
+version = "0.1.0"
+authors = ["sco1 <sco1.git@gmail.com>"]
+repository = "https://github.com/sco1/vid2pdf-rs"
+homepage = "https://github.com/sco1/vid2pdf-rs"
+license = "MIT"
+readme = "README.md"
+
+[workspace.dependencies]
+# Shared dependencies
+dotenvy = "0.15"
+
+# CLI dependencies
+clap = { version = "4.6", features = ["derive"] }
+
+# Local Dependencies
+vid2pdf-core = { path = "crates/vid2pdf-core" }
