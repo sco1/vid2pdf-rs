@@ -8,6 +8,7 @@ homepage = { workspace = true }
 license = { workspace = true }
 
 [dependencies]
+anyhow = { workspace = true }
 clap = { workspace = true }
 dotenvy = { workspace = true }
 vid2pdf-core = { workspace = true}

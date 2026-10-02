@@ -1,6 +1,7 @@
+use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
-use vid2pdf_core::FrameFormat;
+use vid2pdf_core::{ExtractOptions, FrameFormat, extract_frames, resolve_ffmpeg};
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum CliFrameFormat {
@@ -33,11 +34,11 @@ struct Cli {
 
     /// Start time, as [HH:]MM:SS[.m...] or S+[.m...] (omit for video start)
     #[arg(short, long)]
-    start: Option<String>, // TODO
+    start: Option<String>,
 
     /// End time, as [HH:]MM:SS[.m...] or S+[.m...] (omit for video end)
     #[arg(short, long)]
-    end: Option<String>, // TODO
+    end: Option<String>,
 
     /// Intermediate frame format
     #[arg(short = 'f', long, value_enum, default_value_t = CliFrameFormat::Png)]
@@ -48,7 +49,20 @@ struct Cli {
     ffmpeg_path: Option<PathBuf>,
 }
 
-fn main() {
+fn main() -> Result<()> {
     dotenvy::dotenv().ok(); // Preserve any exisiting env var
-    let _ = Cli::parse();
+    let cli = Cli::parse();
+
+    let ffmpeg = resolve_ffmpeg(cli.ffmpeg_path.as_deref())?;
+    let opts = ExtractOptions {
+        start: cli.start,
+        end: cli.end,
+        format: cli.frame_type.into(),
+    };
+
+    let frames = extract_frames(&ffmpeg, &cli.source, &opts)?;
+    println!("Extracted {} frames", frames.paths().len());
+
+    // TODO: PDF Generation
+    frames.close()
 }

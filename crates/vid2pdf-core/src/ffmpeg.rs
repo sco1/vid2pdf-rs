@@ -1,5 +1,8 @@
-use anyhow::{Result, bail};
+use crate::temp_dir::NeighborTempDir;
+use anyhow::{Context, Result, bail, ensure};
 use std::env;
+use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -67,9 +70,8 @@ pub fn resolve_ffmpeg(base_dir: Option<&Path>) -> Result<PathBuf> {
 /// Available options:
 ///   * PNG - Retain video resolution, typically higher run time & resulting PDF file size
 ///   * JPEG - Lossy video frame compression, typically lower run time & resulting PDF file size
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy)]
 pub enum FrameFormat {
-    #[default]
     Png,
     Jpeg,
 }
@@ -82,4 +84,73 @@ impl FrameFormat {
             FrameFormat::Jpeg => "jpg",
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ExtractOptions {
+    pub start: Option<String>,
+    pub end: Option<String>,
+    pub format: FrameFormat,
+}
+
+#[derive(Debug)]
+pub struct Frames {
+    dir: NeighborTempDir,
+    paths: Vec<PathBuf>,
+}
+
+impl Frames {
+    pub fn paths(&self) -> &[PathBuf] {
+        &self.paths
+    }
+
+    pub fn close(self) -> Result<()> {
+        self.dir.close()
+    }
+}
+
+pub fn extract_frames(ffmpeg_exe: &Path, source: &Path, opts: &ExtractOptions) -> Result<Frames> {
+    ensure!(
+        source.is_file(),
+        "Source video does not exist: '{}'",
+        source.display()
+    );
+
+    let tmpdir = NeighborTempDir::create_beside(source)?;
+
+    let mut cmd = Command::new(ffmpeg_exe);
+    cmd.args(["-hide_banner", "-loglevel", "error", "-nostdin"]);
+    if let Some(start) = &opts.start {
+        cmd.args(["-ss", start]);
+    }
+    if let Some(end) = &opts.end {
+        cmd.args(["-to", end]);
+    }
+
+    let pattern = format!("frame_%05d.{}", opts.format.extension());
+    cmd.arg("-i").arg(source).arg(tmpdir.path().join(pattern));
+
+    let output = cmd
+        .output()
+        .with_context(|| format!("failed to launch ffmpeg at '{}'", ffmpeg_exe.display()))?;
+    if !output.status.success() {
+        bail!(
+            "ffmpeg exited with {}:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+
+    let mut paths = fs::read_dir(tmpdir.path())?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<io::Result<Vec<_>>>()
+        .context("Failed to list extracted frames")?;
+    paths.sort();
+
+    ensure!(
+        !paths.is_empty(),
+        "ffmpeg did not extract any frames, please check your start/end parameters"
+    );
+
+    Ok(Frames { dir: tmpdir, paths })
 }

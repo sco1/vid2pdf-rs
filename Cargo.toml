@@ -16,6 +16,7 @@ readme = "README.md"
 # Shared dependencies
 anyhow = "1.0"
 dotenvy = "0.15"
+tempfile = "3.27"
 
 # CLI dependencies
 clap = { version = "4.6", features = ["derive"] }
